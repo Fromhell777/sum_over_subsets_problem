@@ -1,0 +1,84 @@
+Ref: https://codeforces.com/blog/entry/45223
+
+Introduction
+
+In this post, I am going to share my little knowledge on how to solve some problems involving calculation of Sum over Subsets(SOS) using dynamic programming. Thus the name SOS DP. I have chosen this topic because it appears frequently in contests as mediu2m-hard and above problems but has very few blogs/editorials explaining the interesting DP behind it. I also have a predilection for this since I came across it for the first time in ICPC Amritapuri Regionals 2014. Since then I have created many questions based on this concept on various platforms but the number of accepted solutions always seems to be disproportionate to the lucidity of the concept. Following is a small attempt to bridge this gap 😉
+Problem
+
+I will be addressing the following problem: Given a fixed array A of 2N integers, we need to calculate ∀ x function F(x) = Sum of all A[i] such that x&i = i, i.e., i is a subset of x.
+Prerequisite
+
+    Basic Dynamic Programming
+    Bitmasks
+
+In no way this should be considered an introduction to the above topics.
+Solutions
+Bruteforce
+
+for(int mask = 0;mask < (1<<N); ++mask){
+	for(int i = 0;i < (1<<N); ++i){
+		if((mask&i) == i){
+			F[mask] += A[i];
+		}
+	}
+}
+
+This solution is quite straightforward and inefficient with time complexity of O(4N)
+Suboptimal Solution
+
+// iterate over all the masks
+for (int mask = 0; mask < (1<<n); mask++){
+	F[mask] = A[0];
+    // iterate over all the subsets of the mask
+    for(int i = mask; i > 0; i = (i-1) & mask){
+    	F[mask] += A[i];
+    }
+}
+
+Not as trivial, this solution is more efficient with time complexity of O(3N). To calculate the time complexity of this algorithm, notice that for each mask we iterate only over its subsets. Therefore if a mask has K on bits, we do 2K iterations. Also total number of masks with K on bits is . Therefore total iterations =
+SoS Dynamic Programming solution
+
+In this approach we will try to iterate over all subsets of mask in a smarter way. A noticeable flaw in our previous approach is that an index A[x] with x having K off bits is visited by 2K masks. Thus there is repeated recalculation.
+A reason for this overhead is that we are not establishing any relation between the A[x]'s that are being used by different F[mask]'s. We must somehow add another state to these masks and make semantic groups to avoid recalculation of the group.
+
+Denote . Now we will partition this set into non intersecting groups. , that is set of only those subsets of mask which differ from mask only in the first i bits (zero based).
+For example . Using this we can denote any set as a union of some non intersecting sets.
+
+Lets try to relate these sets of numbers. S(mask, i) contains all subsets of mask which differ from it only in the first i bits.
+Consider that ith bit of mask is 0. In this case no subset can differ from mask in the ith bit as it would mean that the numbers will have a 1 at ith bit where mask has a 0 which would mean that it is not a subset of mask. Thus the numbers in this set can now only differ in the first i-1 bits. S(mask,i) = S(mask, i-1).
+Consider that ith bit of mask is 1. Now the numbers belonging to S(mask, i) can be divided into two non intersecting sets. One containing numbers with ith bit as 1 and differing from mask in the next i-1 bits. Second containing numbers with ith bit as 0 and differing from mask⊕2i in next i-1 bits. S(mask, i) = S(mask, i-1) ∪ S(mask⊕2i, i-1).
+
+
+The following diagram depicts how we can relate the S(mask,i) sets on each other. Elements of any set S(mask,i) are the leaves in its subtree. The red prefixes depicts that this part of mask will be common to all its members/children while the black part of mask is allowed to differ.
+
+
+Kindly note that these relations form a directed acyclic graph and not necessarily a rooted tree (think about different values of mask and same value of i)
+After realization of these relations we can easily come up with the corresponding dynamic programming.
+
+//iterative version
+for(int mask = 0; mask < (1<<N); ++mask){
+	dp[mask][-1] = A[mask];	//handle base case separately (leaf states)
+	for(int i = 0;i < N; ++i){
+		if(mask & (1<<i))
+			dp[mask][i] = dp[mask][i-1] + dp[mask^(1<<i)][i-1];
+		else
+			dp[mask][i] = dp[mask][i-1];
+	}
+	F[mask] = dp[mask][N-1];
+}
+
+//memory optimized, super easy to code.
+for(int i = 0; i<(1<<N); ++i)
+	F[i] = A[i];
+for(int i = 0;i < N; ++i) for(int mask = 0; mask < (1<<N); ++mask){
+	if(mask & (1<<i))
+		F[mask] += F[mask^(1<<i)];
+}
+
+The above algorithm runs in O(N 2N) time.
+Discussion Problem
+
+Now you know how to calculate Sum over Subsets for a fixed array A. What would happen if A and F are SOS functions of each other 😉 . Consider following modification to the problem. Assume H1, H2 to be 32 bit integer valued hash functions (just to avoid any combinatoric approach to circumvent this problem) and can be evaluated at any point in constant time.:
+
+
+I enjoyed solving this with harshil. Lets discuss the approaches in comments :)
