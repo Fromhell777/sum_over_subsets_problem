@@ -10,7 +10,6 @@ SOURCES := $(shell find . -maxdepth 1 -name "*.cpp")
 CXX := g++
 CXXFLAGS := -g -std=c++23 -Wall -Wextra -Werror -pedantic -O3
 
-
 OBJECTS_WRONG_DIR := $(foreach source, $(SOURCES), $(basename $(source)).o)
 OBJECTS := $(addprefix $(OBJDIR)/, $(notdir $(OBJECTS_WRONG_DIR)))
 
